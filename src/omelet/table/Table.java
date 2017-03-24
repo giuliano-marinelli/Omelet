@@ -42,7 +42,7 @@ public class Table {
     public void setSemanticRef(Element semanticRef) {
         this.semanticRef = semanticRef;
     }
-    
+
     public LinkedList<Column> getKeys() {
         LinkedList<Column> keyColumns = new LinkedList<>();
         for (Column column : columns) {
@@ -51,6 +51,16 @@ public class Table {
             }
         }
         return keyColumns;
+    }
+
+    public boolean containsColumn(Column columnSearched) {
+        boolean result = false;
+        for (Column column : columns) {
+            if (column.equals(columnSearched)) {
+                result = true;
+            }
+        }
+        return result;
     }
 
 }

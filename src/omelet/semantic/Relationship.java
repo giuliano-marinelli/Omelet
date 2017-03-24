@@ -19,9 +19,9 @@ public class Relationship implements Element {
             if (!weak && lines[i].equals("_weak")) {
                 weak = true;
             } else {
-                /*if (!name.equals("")) {
+                if (!name.equals("")) {
                     name += " ";
-                }*/
+                }
                 name += lines[i];
             }
         }

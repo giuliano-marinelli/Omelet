@@ -221,7 +221,7 @@ public class Connector {
     public boolean isManyCardinality() {
         boolean many = false;
         String cardinality = getCardinality();
-        if (cardinality.matches("[a-zA-Z]+") || Integer.parseInt(cardinality) > 1) {
+        if (cardinality != "" && (cardinality.matches("[a-zA-Z]+") || Integer.parseInt(cardinality) > 1)) {
             many = true;
         }
         return many;

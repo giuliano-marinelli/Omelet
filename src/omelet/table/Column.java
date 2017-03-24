@@ -116,4 +116,12 @@ public class Column {
         this.semanticRef = semanticRef;
     }
 
+    public boolean equals(Column otherColumn) {
+        boolean result = false;
+        if (name.equals(otherColumn.getName())) {
+            result = true;
+        }
+        return result;
+    }
+
 }

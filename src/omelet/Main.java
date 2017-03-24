@@ -1,28 +1,34 @@
 package omelet;
 
-import omelet.table.Column;
-import omelet.table.Table;
-import omelet.table.Database;
-import omelet.semantic.Diagram;
-import omelet.semantic.Relationship;
-import omelet.semantic.Inheritance;
-import omelet.semantic.Entity;
-import omelet.semantic.Attribute;
-import omelet.semantic.Connector;
-import omelet.graphic.LineConnector;
-import omelet.graphic.RectangleElement;
+import java.awt.Canvas;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import omelet.table.*;
+import omelet.semantic.*;
+import omelet.graphic.*;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.Line2D;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
 import org.jdom2.input.SAXBuilder;
+import org.jdom2.output.Format;
+import org.jdom2.output.XMLOutputter;
+import org.jgrapht.UndirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.traverse.DepthFirstIterator;
+import org.jgrapht.traverse.GraphIterator;
 import tecladoIn.TecladoIn;
 
 /**
@@ -35,10 +41,13 @@ public class Main {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        Diagram diagram = generateDiagram("src/res/test.uxf");
+        //Diagram diagram = generateDiagram("src/res/test3.uxf");
+        Diagram diagram = generateDiagram("C:/Documentos/Proyectos/Changamas/ER diagram v4.uxf");
         //System.out.println(diagram.toString());
+
         Database database = generateDatabase(diagram);
-        //System.out.println(database.toString());
+        System.out.println(database.toString());
+
         String sql = generateSQL(database);
         //System.out.println(sql);
         try {
@@ -47,6 +56,16 @@ public class Main {
             writer.close();
         } catch (IOException e) {
             System.err.println("A problem in the creation of SQL file.");
+        }
+
+        Document xml = generateDatabaseDiagram(database);
+        try {
+            XMLOutputter xmlOutput = new XMLOutputter();
+            xmlOutput.setFormat(Format.getPrettyFormat());
+            xmlOutput.output(xml, new FileWriter("src/res/" + database.getName() + ".uxf"));
+        } catch (IOException ex) {
+            System.err.println("A problem in the creation of XML (.uxf) file.");
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -251,6 +270,9 @@ public class Main {
         for (Table table : tables) {
             doInheritances(table, database, diagram);
         }
+        for (Relationship relationship : diagram.getRelationships()) {
+            doWeakRelationship(relationship, database, diagram);
+        }
         for (Attribute attribute : diagram.getAttributes()) {
             doMultivalued(attribute, database, diagram);
         }
@@ -305,7 +327,7 @@ public class Main {
                                     Table subTable = findTableWithEntity(subEntity, database);
                                     LinkedList<Column> subTableKeys = subTable.getKeys();
                                     if (inheritance.getType() != 3) {
-                                        if (subTableKeys.isEmpty()) {
+                                        if (subTableKeys.isEmpty() || subEntity.isWeak()) {
                                             for (Column columnKey : keys) {
                                                 String realName = columnKey.getName();
                                                 String[] formedName = realName.split("\\.");
@@ -313,11 +335,13 @@ public class Main {
                                                     realName = formedName[formedName.length - 1];
                                                 }
                                                 Column newKey = new Column(table.getName() + "." + realName, columnKey.getDataType(), true, true, table, columnKey, columnKey.getSemanticRef());
-                                                subTable.getColumns().add(newKey);
+                                                if (!subTable.containsColumn(newKey)) {
+                                                    subTable.getColumns().add(newKey);
+                                                }
                                             }
                                             doInheritances(subTable, database, diagram);
                                         }
-                                    } else if (!subTableKeys.isEmpty()) {
+                                    } else {
                                         for (Column columnKey : subTableKeys) {
                                             String realName = columnKey.getName();
                                             String[] formedName = realName.split("\\.");
@@ -325,7 +349,9 @@ public class Main {
                                                 realName = formedName[formedName.length - 1];
                                             }
                                             Column newForeignKey = new Column(subTable.getName() + "." + realName, columnKey.getDataType(), false, true, subTable, columnKey, columnKey.getSemanticRef());
-                                            table.getColumns().add(newForeignKey);
+                                            if (!table.containsColumn(newForeignKey)) {
+                                                table.getColumns().add(newForeignKey);
+                                            }
                                         }
                                     }
                                 }
@@ -339,61 +365,66 @@ public class Main {
 
     public static void doMultivalued(Attribute attribute, Database database, Diagram diagram) {
         if (attribute.isMultivalued()) {
+            Table multivaluedTable = null;
+            Column multivaluedKey = null;
             boolean exists = false;
             for (Table table : database.getTables()) {
                 if (table.getName().equals(attribute.getName())) {
                     exists = true;
+                    multivaluedTable = table;
+                    for (Column column : multivaluedTable.getKeys()) {
+                        multivaluedKey = column;
+                    }
                 }
             }
             if (!exists) {
                 LinkedList<Column> columns = new LinkedList<>();
-                Table table = new Table(attribute.getName(), columns, attribute);
-                database.getTables().add(table);
-                Column multivaluedKey = new Column("id_" + attribute.getName(), "int", true, null);
+                multivaluedTable = new Table(attribute.getName(), columns, null);
+                database.getTables().add(multivaluedTable);
+                multivaluedKey = new Column("id_" + attribute.getName(), "int", true, null);
                 columns.add(multivaluedKey);
                 columns.add(new Column(attribute.getMultivaluedValue(), attribute.getDataType(), false, null));
-
-                Entity entity;
-                for (Connector connector : diagram.getConnectors()) {
-                    if ((entity = connector.connectEntity(attribute)) != null) {
-                        System.out.println(
-                                "For the multivalued " + attribute.getName()
-                                + " in the relation with " + entity.getName()
-                                + " wants a relation (1)1:M or a relation "
-                                + "(2)N:M: ");
-                        int decision = 0;
-                        do {
-                            decision = TecladoIn.readInt();
-                            Table entityTable;
-                            String multivaluedTableKeyName;
-                            switch (decision) {
-                                case 1:
-                                    entityTable = findTableWithEntity(entity, database);
-                                    multivaluedTableKeyName = structureName(multivaluedKey, table, null, connector);
-                                    entityTable.getColumns().add(
-                                            new Column(multivaluedTableKeyName, multivaluedKey.getDataType(), false, true, table, multivaluedKey, multivaluedKey.getSemanticRef()));
-                                    break;
-                                case 2:
-                                    entityTable = findTableWithEntity(entity, database);
-                                    LinkedList<Column> relationshipColumns = new LinkedList<>();
-                                    Table relationshipTable = new Table(entity.getName() + "_" + attribute.getName(), relationshipColumns, null);
-                                    database.getTables().add(relationshipTable);
-                                    multivaluedTableKeyName = structureName(multivaluedKey, table, null, connector);
+            }
+            Entity entity;
+            for (Connector connector : diagram.getConnectors()) {
+                if ((entity = connector.connectEntity(attribute)) != null) {
+                    System.out.println(
+                            "For the multivalued " + attribute.getName()
+                            + " in the relation with " + entity.getName()
+                            + " wants a relation (1)1:M or a relation "
+                            + "(2)N:M: ");
+                    int decision = 0;
+                    do {
+                        decision = TecladoIn.readInt();
+                        Table entityTable;
+                        String multivaluedTableKeyName;
+                        switch (decision) {
+                            case 1:
+                                entityTable = findTableWithEntity(entity, database);
+                                multivaluedTableKeyName = structureName(multivaluedKey, multivaluedTable, null, connector);
+                                entityTable.getColumns().add(
+                                        new Column(multivaluedTableKeyName, multivaluedKey.getDataType(), false, true, multivaluedTable, multivaluedKey, multivaluedKey.getSemanticRef()));
+                                break;
+                            case 2:
+                                entityTable = findTableWithEntity(entity, database);
+                                LinkedList<Column> relationshipColumns = new LinkedList<>();
+                                Table relationshipTable = new Table(entity.getName() + "_" + attribute.getName(), relationshipColumns, null);
+                                database.getTables().add(relationshipTable);
+                                multivaluedTableKeyName = structureName(multivaluedKey, multivaluedTable, null, connector);
+                                relationshipTable.getColumns().add(
+                                        new Column(multivaluedTableKeyName, multivaluedKey.getDataType(), true, true, multivaluedTable, multivaluedKey, multivaluedKey.getSemanticRef()));
+                                String entityTableKeyName;
+                                for (Column columnKey : entityTable.getKeys()) {
+                                    entityTableKeyName = structureName(columnKey, entityTable, null, connector);
                                     relationshipTable.getColumns().add(
-                                            new Column(multivaluedTableKeyName, multivaluedKey.getDataType(), true, true, table, multivaluedKey, multivaluedKey.getSemanticRef()));
-                                    String entityTableKeyName;
-                                    for (Column columnKey : entityTable.getKeys()) {
-                                        entityTableKeyName = structureName(columnKey, entityTable, null, connector);
-                                        relationshipTable.getColumns().add(
-                                                new Column(entityTableKeyName, columnKey.getDataType(), true, true, entityTable, columnKey, columnKey.getSemanticRef()));
-                                    }
-                                    break;
-                                default:
-                                    System.err.println("You must enter 1 or 2 (integer numbers). Pleas re-enter the number: ");
-                                    break;
-                            }
-                        } while (decision != 1 && decision != 2);
-                    }
+                                            new Column(entityTableKeyName, columnKey.getDataType(), true, true, entityTable, columnKey, columnKey.getSemanticRef()));
+                                }
+                                break;
+                            default:
+                                System.err.println("You must enter 1 or 2 (integer numbers). Pleas re-enter the number: ");
+                                break;
+                        }
+                    } while (decision != 1 && decision != 2);
                 }
             }
         }
@@ -441,9 +472,61 @@ public class Main {
         if (haveAttributes || amountConnections > 2 || amountManyCardinalities > 1) {
             doRelationshipManyMany(relationship, columns, tables, relationshipConnectors, database);
         } else if (amountManyCardinalities == 1) {
-            doRelationshipOneMany(relationship, relationshipConnectors, database);
+            doRelationshipOneMany(relationship, relationshipConnectors, database, diagram);
         } else if (amountManyCardinalities == 0) {
             doRelationshipOneOne(relationship, relationshipConnectors, database);
+        }
+    }
+
+    public static void doWeakRelationship(Relationship relationship, Database database, Diagram diagram) {
+        if (relationship.isWeak()) {
+            LinkedList<Connector> relationshipConnectors = new LinkedList<>();
+            for (Connector connectorRelationship : diagram.getConnectors()) {
+                if (connectorRelationship.connectEntity(relationship) != null) {
+                    if (connectorRelationship.getCardinality().isEmpty()) {
+                        System.err.println("Una cardinalidad no esta definida, o "
+                                + "fue definida en ambos lados de un conector");
+                    } else {
+                        relationshipConnectors.add(connectorRelationship);
+                    }
+                }
+            }
+            Entity entityWeak;
+            Table tableWeak;
+            for (Connector connectorManyTable : relationshipConnectors) {
+                if (connectorManyTable.isManyCardinality()) {
+                    entityWeak = connectorManyTable.connectEntity(relationship);
+                    tableWeak = findTableWithEntity(entityWeak, database);
+                    Entity entityOne;
+                    Table tableOne;
+                    for (Connector connectorOneTable : relationshipConnectors) {
+                        if (!connectorOneTable.isManyCardinality()) {
+                            entityOne = connectorOneTable.connectEntity(relationship);
+                            if (entityOne.isWeak()) {
+                                Relationship otherWeakRelationship;
+                                for (Connector connectorOtherWeak : diagram.getConnectors()) {
+                                    if (connectorOtherWeak.isManyCardinality()) {
+                                        if ((otherWeakRelationship = connectorOtherWeak.connectRelationship(entityOne)) != null) {
+                                            if (otherWeakRelationship.isWeak()) {
+                                                doWeakRelationship(otherWeakRelationship, database, diagram);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            tableOne = findTableWithEntity(entityOne, database);
+                            for (Column column : tableOne.getKeys()) {
+                                String finalName = structureName(column, tableOne, relationship, connectorManyTable);
+                                Column newKey = new Column(finalName, column.getDataType(), true, true, tableOne, column, column.getSemanticRef());
+                                if (!tableWeak.containsColumn(newKey)) {
+                                    tableWeak.getColumns().add(newKey);
+                                }
+                            }
+                            doInheritances(tableWeak, database, diagram);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -470,25 +553,25 @@ public class Main {
     }
 
     public static void doRelationshipOneMany(Relationship relationship,
-            LinkedList<Connector> relationshipConnectors, Database database) {
-        Entity entityMany;
-        Table tableMany;
-        for (Connector connectorManyTable : relationshipConnectors) {
-            if (connectorManyTable.isManyCardinality()) {
-                entityMany = connectorManyTable.connectEntity(relationship);
-                tableMany = findTableWithEntity(entityMany, database);
-                Entity entityOne;
-                Table tableOne;
-                for (Connector connectorOneTable : relationshipConnectors) {
-                    if (!connectorOneTable.isManyCardinality()) {
-                        entityOne = connectorOneTable.connectEntity(relationship);
-                        tableOne = findTableWithEntity(entityOne, database);
-                        for (Column column : tableOne.getKeys()) {
-                            String finalName = structureName(column, tableOne, relationship, connectorManyTable);
-                            if (!relationship.isWeak()) {
-                                tableMany.getColumns().add(new Column(finalName, column.getDataType(), false, true, tableOne, column, column.getSemanticRef()));
-                            } else {
-                                tableMany.getColumns().add(new Column(finalName, column.getDataType(), true, true, tableOne, column, column.getSemanticRef()));
+            LinkedList<Connector> relationshipConnectors, Database database, Diagram diagram) {
+        if (!relationship.isWeak()) {
+            Entity entityMany;
+            Table tableMany;
+            for (Connector connectorManyTable : relationshipConnectors) {
+                if (connectorManyTable.isManyCardinality()) {
+                    entityMany = connectorManyTable.connectEntity(relationship);
+                    tableMany = findTableWithEntity(entityMany, database);
+                    Entity entityOne;
+                    Table tableOne;
+                    for (Connector connectorOneTable : relationshipConnectors) {
+                        if (!connectorOneTable.isManyCardinality()) {
+                            entityOne = connectorOneTable.connectEntity(relationship);
+                            tableOne = findTableWithEntity(entityOne, database);
+                            for (Column column : tableOne.getKeys()) {
+                                String finalName = structureName(column, tableOne, relationship, connectorManyTable);
+                                if (!relationship.isWeak()) {
+                                    tableMany.getColumns().add(new Column(finalName, column.getDataType(), false, true, tableOne, column, column.getSemanticRef()));
+                                }
                             }
                         }
                     }
@@ -567,7 +650,7 @@ public class Main {
         char[] chars = text.toCharArray();
         int amountChars = 0;
         for (int i = 1; i < chars.length; i++) {
-            if (Character.isUpperCase(chars[i])) {
+            if (Character.isUpperCase(chars[i]) && chars[i - 1] != ' ') {
                 text = text.substring(0, i + amountChars) + "_" + text.substring(i + amountChars, text.length());
                 amountChars++;
             }
@@ -615,6 +698,135 @@ public class Main {
             sql += "\n\n";
         }
         return sql;
+    }
+
+    public static Document generateDatabaseDiagram(Database database) {
+        Document document = new Document();
+
+        Element diagram = new Element("diagram");
+        diagram.setAttribute(new org.jdom2.Attribute("program", "umlet"));
+        diagram.setAttribute(new org.jdom2.Attribute("version", "14.2"));
+        document.setRootElement(diagram);
+
+        Element helpText = new Element("help_text");
+        helpText.setText("// Uncomment the following line to change the fontsize and font:\n"
+                + "fontsize=11\n"
+                + "fontfamily=Monospaced //possible: SansSerif,Serif,Monospaced\n"
+                + "\n"
+                + "\n"
+                + "//////////////////////////////////////////////////////////////////////////////////////////////\n"
+                + "// Welcome to UMLet!\n"
+                + "//\n"
+                + "// Double-click on elements to add them to the diagram, or to copy them\n"
+                + "// Edit elements by modifying the text in this panel\n"
+                + "// Hold Ctrl to select multiple elements\n"
+                + "// Use Ctrl+mouse to select via lasso\n"
+                + "//\n"
+                + "// Use +/- or Ctrl+mouse wheel to zoom\n"
+                + "// Drag a whole relation at its central square icon\n"
+                + "//\n"
+                + "// Press Ctrl+C to copy the whole diagram to the system clipboard (then just paste it to, eg, Word)\n"
+                + "// Edit the files in the \"palettes\" directory to create your own element palettes\n"
+                + "//\n"
+                + "// Select \"Custom Elements &gt; New...\" to create new element types\n"
+                + "//////////////////////////////////////////////////////////////////////////////////////////////\n"
+                + "\n"
+                + "\n"
+                + "// This text will be stored with each diagram;  use it for notes.");
+        Element zoomLevel = new Element("zoom_level").setText("10");
+        diagram.addContent(helpText);
+        diagram.addContent(zoomLevel);
+
+        UndirectedGraph<Element, DefaultEdge> elementsGraph = new SimpleGraph<Element, DefaultEdge>(DefaultEdge.class);
+        
+        Font font = new Font("Monospaced", Font.PLAIN, 11);
+        Canvas canvas = new Canvas();
+        FontMetrics fontMetric = canvas.getFontMetrics(font);
+
+        for (Table table : database.getTables()) {
+            Element element = new Element("element");
+            Element id = new Element("id").setText("UMLClass");
+            Element coordinates = new Element("coordinates");
+            Element x = new Element("x");
+            Element y = new Element("y");
+            Element w = new Element("w");
+            Element h = new Element("h");
+            Element panelAttributes = new Element("panel_attributes");
+            Element additionalAttributes = new Element("additional_attributes");
+
+            element.addContent(id);
+            element.addContent(coordinates);
+            element.addContent(panelAttributes);
+            element.addContent(additionalAttributes);
+            coordinates.addContent(x);
+            coordinates.addContent(y);
+            coordinates.addContent(w);
+            coordinates.addContent(h);
+
+            int lineMaxSize = 0;
+            int amountLines = 0;
+            String textElement = table.getName();
+            lineMaxSize = textElement.length();
+            amountLines++;
+            textElement += "\n";
+            textElement += "--";
+            textElement += "\n";
+            for (Column column : table.getColumns()) {
+                String textAttribute = column.getName() + " " + column.getDataType();
+                if (column.isForeignKey()) {
+                    textAttribute += " FK";
+                }
+                if (column.isPrimaryKey()) {
+                    textAttribute = "_" + textAttribute + "_";
+                }
+                
+                int newLineSize = SwingUtilities.computeStringWidth(fontMetric, textAttribute);
+                
+                lineMaxSize = (lineMaxSize > newLineSize) ? lineMaxSize : newLineSize;
+                amountLines++;
+                
+                textElement += textAttribute;
+                textElement += "\n";
+            }
+
+            panelAttributes.setText(textElement);
+            
+            w.setText(lineMaxSize + "");
+            h.setText(amountLines * 11 + 15 + "");
+
+            elementsGraph.addVertex(element);
+            diagram.addContent(element);
+        }
+
+        GraphIterator<Element, DefaultEdge> iterator
+                = new DepthFirstIterator<Element, DefaultEdge>(elementsGraph);
+        int xAdjust = 50;
+        int yAdjust = 50;
+        int nextLineYAdjust = 0;
+        while (iterator.hasNext()) {
+            Element element = iterator.next();
+            Element coordinates = element.getChild("coordinates");
+            Element x = coordinates.getChild("x");
+            Element y = coordinates.getChild("y");
+            Element w = coordinates.getChild("w");
+            Element h = coordinates.getChild("h");
+            int wValue = Integer.parseInt(w.getText());
+            int hValue = Integer.parseInt(h.getText());
+
+            x.setText(xAdjust + "");
+            y.setText(yAdjust + "");
+
+            nextLineYAdjust = (yAdjust + hValue > nextLineYAdjust) ? yAdjust + hValue : nextLineYAdjust;
+
+            if ((xAdjust + wValue) > 1000) {
+                xAdjust = 50;
+                yAdjust = nextLineYAdjust + 50;
+            } else {
+                xAdjust = xAdjust + wValue + 50;
+            }
+        }
+
+        return document;
     }
 
 }
