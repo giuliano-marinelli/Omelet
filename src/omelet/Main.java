@@ -41,7 +41,6 @@ public class Main {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        //asd
         //Diagram diagram = generateDiagram("src/res/test3.uxf");
         Diagram diagram = generateDiagram("C:/Documentos/Proyectos/Changamas/ER diagram v4.uxf");
         //System.out.println(diagram.toString());
