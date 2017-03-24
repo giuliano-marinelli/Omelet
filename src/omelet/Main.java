@@ -738,7 +738,7 @@ public class Main {
         diagram.addContent(zoomLevel);
 
         UndirectedGraph<Element, DefaultEdge> elementsGraph = new SimpleGraph<Element, DefaultEdge>(DefaultEdge.class);
-        
+
         Font font = new Font("Monospaced", Font.PLAIN, 11);
         Canvas canvas = new Canvas();
         FontMetrics fontMetric = canvas.getFontMetrics(font);
@@ -779,18 +779,18 @@ public class Main {
                 if (column.isPrimaryKey()) {
                     textAttribute = "_" + textAttribute + "_";
                 }
-                
+
                 int newLineSize = SwingUtilities.computeStringWidth(fontMetric, textAttribute);
-                
+
                 lineMaxSize = (lineMaxSize > newLineSize) ? lineMaxSize : newLineSize;
                 amountLines++;
-                
+
                 textElement += textAttribute;
                 textElement += "\n";
             }
 
             panelAttributes.setText(textElement);
-            
+
             w.setText(lineMaxSize + "");
             h.setText(amountLines * 11 + 15 + "");
 

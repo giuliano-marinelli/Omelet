@@ -53,4 +53,25 @@ public class Database {
         return result;
     }
 
+    public String toStringNoColor() {
+        String result = "";
+        result += "Tables: \n";
+        for (Table table : tables) {
+            result += " " + table.getName() + "\n";
+            for (Column column : table.getColumns()) {
+                if (column.isPrimaryKey() && column.isForeignKey()) {
+                    result += "    -" + column.getName() + " FK PK";
+                } else if (column.isPrimaryKey()) {
+                    result += "    -" + column.getName() + " PK";
+                } else if (column.isForeignKey()) {
+                    result += "    -" + column.getName() + " FK";
+                } else {
+                    result += "    -" + column.getName();
+                }
+                result += "\n";
+            }
+        }
+        return result;
+    }
+
 }
