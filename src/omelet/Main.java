@@ -41,17 +41,16 @@ public class Main {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        //Diagram diagram = generateDiagram("src/files/test3.uxf");
-        Diagram diagram = generateDiagram("C:/Documentos/Proyectos/Changamas/ER diagram v4.uxf");
+        Diagram diagram = generateDiagram("src/files/test.uxf");
         //System.out.println(diagram.toString());
 
         Database database = generateDatabase(diagram);
-        System.out.println(database.toString());
+        //System.out.println(database.toString());
 
         String sql = generateSQL(database);
         //System.out.println(sql);
         try {
-            PrintWriter writer = new PrintWriter("src/res/" + database.getName() + ".sql", "UTF-8");
+            PrintWriter writer = new PrintWriter("src/files/" + database.getName() + ".sql", "UTF-8");
             writer.println(sql);
             writer.close();
         } catch (IOException e) {
@@ -62,7 +61,7 @@ public class Main {
         try {
             XMLOutputter xmlOutput = new XMLOutputter();
             xmlOutput.setFormat(Format.getPrettyFormat());
-            xmlOutput.output(xml, new FileWriter("src/res/" + database.getName() + ".uxf"));
+            xmlOutput.output(xml, new FileWriter("src/files/" + database.getName() + ".uxf"));
         } catch (IOException ex) {
             System.err.println("A problem in the creation of XML (.uxf) file.");
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
@@ -663,6 +662,7 @@ public class Main {
 
     public static String generateSQL(Database database) {
         String sql = "";
+        String ref = "";
         sql += "CREATE DATABASE " + database.getName() + ";";
         sql += "\n\n";
         for (Table table : database.getTables()) {
@@ -677,7 +677,10 @@ public class Main {
                     sql += "INT";
                 }
                 if (column.isForeignKey()) {
-                    sql += " FOREIGN KEY REFERENCES " + column.getReferenceTable().getName() + "(" + column.getReferenceColumn().getName() + ")";
+                    ref += "ALTER TABLE " + table.getName();
+                    ref += "\n";
+                    ref += "ADD FOREIGN KEY " + column.getName() + " REFERENCES " + column.getReferenceTable().getName() + "(" + column.getReferenceColumn().getName() + ");";
+                    ref += "\n\n";
                 }
                 //if (table.getColumns().getLast() != column) {
                 sql += ", ";
@@ -697,6 +700,7 @@ public class Main {
             sql += ");";
             sql += "\n\n";
         }
+        sql += ref;
         return sql;
     }
 
