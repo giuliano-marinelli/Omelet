@@ -10,7 +10,7 @@ import javax.swing.JTable;
 
 /**
  *
- * @author Giuliano
+ * @author Giuliano Marinelli
  */
 public class RadioButtonEditor extends DefaultCellEditor implements ItemListener {
 
@@ -38,5 +38,5 @@ public class RadioButtonEditor extends DefaultCellEditor implements ItemListener
     public void itemStateChanged(ItemEvent e) {
         super.fireEditingStopped();
     }
-    
+
 }

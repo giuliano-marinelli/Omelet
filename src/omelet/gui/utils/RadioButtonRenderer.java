@@ -6,7 +6,7 @@ import javax.swing.table.TableCellRenderer;
 
 /**
  *
- * @author Giuliano
+ * @author Giuliano Marinelli
  */
 public class RadioButtonRenderer implements TableCellRenderer {
 

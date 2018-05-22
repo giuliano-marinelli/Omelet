@@ -4,7 +4,7 @@ import omelet.semantic.Attribute;
 
 /**
  *
- * @author Giuliano
+ * @author Giuliano Marinelli
  */
 public class Column {
 

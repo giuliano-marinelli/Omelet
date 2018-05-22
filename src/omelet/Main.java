@@ -33,9 +33,9 @@ import tecladoIn.TecladoIn;
 
 /**
  *
- * @author Giuliano
+ * @author Giuliano Marinelli
  */
-public class Main {
+public abstract class Main {
 
     /**
      * @param args the command line arguments

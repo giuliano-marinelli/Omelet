@@ -2,7 +2,7 @@ package omelet.semantic;
 
 /**
  *
- * @author Giuliano
+ * @author Giuliano Marinelli
  */
 public class Inheritance implements Element {
 

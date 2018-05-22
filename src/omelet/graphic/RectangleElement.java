@@ -5,13 +5,13 @@ import java.awt.Rectangle;
 
 /**
  *
- * @author Giuliano
+ * @author Giuliano Marinelli
  */
 public class RectangleElement {
-    
+
     private Rectangle rectangle;
     private Element element;
-    
+
     public RectangleElement(Rectangle rectangle, Element element) {
         this.rectangle = rectangle;
         this.element = element;
@@ -37,8 +37,8 @@ public class RectangleElement {
     public String toString() {
         String result = "";
         result += element.toString();
-        result += "("+rectangle.getX()+","+rectangle.getY()+","+rectangle.getWidth()+","+rectangle.getHeight()+")";
+        result += "(" + rectangle.getX() + "," + rectangle.getY() + "," + rectangle.getWidth() + "," + rectangle.getHeight() + ")";
         return result;
     }
-    
+
 }

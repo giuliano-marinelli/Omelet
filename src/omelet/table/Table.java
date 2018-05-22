@@ -5,7 +5,7 @@ import java.util.LinkedList;
 
 /**
  *
- * @author Giuliano
+ * @author Giuliano Marinelli
  */
 public class Table {
 

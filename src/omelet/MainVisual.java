@@ -5,13 +5,12 @@ import omelet.table.*;
 import omelet.semantic.*;
 import java.util.LinkedList;
 import javax.swing.ButtonGroup;
-import javax.swing.JRadioButton;
 
 /**
  *
- * @author Giuliano
+ * @author Giuliano Marinelli
  */
-public class MainVisual extends Main {
+public abstract class MainVisual extends Main {
 
     public static Database generateDatabase(Diagram diagram, LinkedList<ButtonGroup> optionMultivalued, LinkedList<ButtonGroup> optionOneToOne) {
         //System.out.print("Enter name of database: ");

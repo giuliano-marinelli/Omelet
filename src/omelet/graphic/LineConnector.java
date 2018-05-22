@@ -5,7 +5,7 @@ import java.awt.geom.Line2D;
 
 /**
  *
- * @author Giuliano
+ * @author Giuliano Marinelli
  */
 public class LineConnector {
 

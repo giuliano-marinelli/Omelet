@@ -4,7 +4,7 @@ import static omelet.Main.formatName;
 
 /**
  *
- * @author Giuliano
+ * @author Giuliano Marinelli
  */
 public class Connector {
 
