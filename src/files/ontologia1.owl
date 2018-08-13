@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<Ontology xmlns="http://www.w3.org/2002/07/owl#"
+     xml:base="http://www.semanticweb.org/ontologies/ontologia1"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:xml="http://www.w3.org/XML/1998/namespace"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+     ontologyIRI="http://www.semanticweb.org/ontologies/ontologia1">
+    <Prefix name="owl" IRI="http://www.w3.org/2002/07/owl#"/>
+    <Prefix name="rdf" IRI="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>
+    <Prefix name="xml" IRI="http://www.w3.org/XML/1998/namespace"/>
+    <Prefix name="xsd" IRI="http://www.w3.org/2001/XMLSchema#"/>
+    <Prefix name="rdfs" IRI="http://www.w3.org/2000/01/rdf-schema#"/>
+    <Declaration>
+        <ObjectProperty IRI="#Role2"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#destination"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="#Role1"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#HomePoint"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#mOrigin"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#LandLine"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#MobileCall"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Call"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#PhonePoint"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#origin"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="#Cell"/>
+    </Declaration>
+    <EquivalentClasses>
+        <Class IRI="#PhonePoint"/>
+        <ObjectUnionOf>
+            <Class IRI="#Cell"/>
+            <Class IRI="#LandLine"/>
+        </ObjectUnionOf>
+    </EquivalentClasses>
+    <SubClassOf>
+        <Class IRI="#Cell"/>
+        <Class IRI="#PhonePoint"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#HomePoint"/>
+        <Class IRI="#PhonePoint"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#LandLine"/>
+        <Class IRI="#PhonePoint"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#MobileCall"/>
+        <Class IRI="#Call"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#destination"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#Role1"/>
+            <Class IRI="#Call"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#destination"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#Role2"/>
+            <Class IRI="#PhonePoint"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#mOrigin"/>
+        <Class IRI="#origin"/>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#mOrigin"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#Role1"/>
+            <Class IRI="#MobileCall"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#mOrigin"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#Role2"/>
+            <Class IRI="#Cell"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#origin"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#Role1"/>
+            <Class IRI="#Call"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="#origin"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="#Role2"/>
+            <Class IRI="#PhonePoint"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <DisjointClasses>
+        <Class IRI="#Cell"/>
+        <Class IRI="#HomePoint"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#Cell"/>
+        <Class IRI="#LandLine"/>
+    </DisjointClasses>
+</Ontology>
