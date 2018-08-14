@@ -1,3 +1,5 @@
+package omelet;
+
 /* Copyright 2008, 2009, 2010 by the Oxford University Computing Laboratory
 
    This file is part of HermiT.
@@ -19,7 +21,6 @@
 import java.io.File;
 import org.semanticweb.HermiT.Reasoner;
 import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 
@@ -27,7 +28,7 @@ import org.semanticweb.owlapi.model.OWLOntologyManager;
  * This example demonstrates how HermiT can be used to check the consistency of
  * the Pizza ontology
  */
-public class Demo {
+public class HermitDemo {
 
     public static void main(String[] args) throws Exception {
         // First, we create an OWLOntologyManager object. The manager will load and save ontologies.
