@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
+import org.coode.owlapi.turtle.TurtleOntologyFormat;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
@@ -29,6 +30,9 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 import org.jgrapht.traverse.DepthFirstIterator;
 import org.jgrapht.traverse.GraphIterator;
+import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.io.RDFXMLOntologyFormat;
+import org.semanticweb.owlapi.model.*;
 import tecladoIn.TecladoIn;
 
 /**
@@ -37,6 +41,8 @@ import tecladoIn.TecladoIn;
  */
 public abstract class Main {
 
+    private static OWLOntologyManager manager = new OWLManager().createOWLOntologyManager();
+
     /**
      * @param args the command line arguments
      */
@@ -44,6 +50,10 @@ public abstract class Main {
         Diagram diagram = generateDiagram("src/files/test.uxf");
         //System.out.println(diagram.toString());
 
+        OWLOntology ontology = generateOWL(diagram);
+
+        exportOWL(ontology);
+        /*
         Database database = generateDatabase(diagram);
         //System.out.println(database.toString());
 
@@ -65,6 +75,36 @@ public abstract class Main {
         } catch (IOException ex) {
             System.err.println("A problem in the creation of XML (.uxf) file.");
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+        }
+         */
+    }
+
+    private static OWLOntology generateOWL(Diagram diagram) {
+        OWLOntology ontology = null;
+        try {
+            OWLDataFactory factory = manager.getOWLDataFactory();
+
+            String baseIRI = "localhost";
+            ontology = manager.createOntology(IRI.create(baseIRI));
+
+            for (Entity entity : diagram.getEntities()) {
+                OWLClass entityClass = factory.getOWLClass(IRI.create(baseIRI + "#" + entity.getName()));
+                OWLAxiom entityAxiom = factory.getOWLDeclarationAxiom(entityClass);
+                manager.addAxiom(ontology, entityAxiom);
+            }
+        } catch (OWLOntologyCreationException e) {
+            System.err.println("A problem in the creation of OWL structure.");
+        }
+        return ontology;
+    }
+
+    private static void exportOWL(OWLOntology ontology) {
+        try {
+            File file = new File("src/files/result.owl");
+            manager.setOntologyFormat(ontology, new RDFXMLOntologyFormat());
+            manager.saveOntology(ontology, IRI.create(file));
+        } catch (OWLOntologyStorageException ex) {
+            System.err.println("A problem in the creation of OWL (.owl) file.");
         }
     }
 
